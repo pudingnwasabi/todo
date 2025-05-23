@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Todo App Tests</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        #testResults { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .pass { color: green; }
+        .fail { color: red; font-weight: bold; }
+        .log-message { margin-left: 20px; font-style: italic; }
+        .test-case { margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dotted #eee; }
+    </style>
+</head>
+<body>
+    <h1>Todo App Tests</h1>
+
+    <!-- Minimal DOM elements required by app.js -->
+    <input type="text" id="todoInput" placeholder="새 할 일을 입력하세요...">
+    <select id="prioritySelect">
+        <option value="high">High</option>
+        <option value="medium" selected>Medium</option>
+        <option value="low">Low</option>
+    </select>
+    <button onclick="addTodo()">Add Todo</button> <!-- Direct call for simplicity, or give it an ID -->
+
+    <div class="filters">
+        <button class="filter-btn active" onclick="filterTodos('all')">전체</button>
+        <button class="filter-btn" onclick="filterTodos('active')">할 일</button>
+        <button class="filter-btn" onclick="filterTodos('completed')">완료</button>
+        <button id="sortPriorityBtn" class="filter-btn" onclick="toggleSortByPriority()">우선순위 정렬</button>
+    </div>
+
+    <ul id="todoList"></ul>
+    <div id="testResults"></div>
+
+    <script src="app.js"></script>
+    <script>
+        const testResultsDiv = document.getElementById('testResults');
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        // --- Test Utilities ---
+        function logTestResult(testName, message, passed) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = passed ? 'pass' : 'fail';
+            resultDiv.innerHTML = `<strong>${testName}:</strong> ${message}`;
+            testResultsDiv.appendChild(resultDiv);
+            if (passed) testsPassed++; else testsFailed++;
+        }
+
+        function logMessage(message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'log-message';
+            msgDiv.textContent = message;
+            testResultsDiv.appendChild(msgDiv);
+        }
+        
+        function assertEquals(actual, expected, testName) {
+            if (actual === expected) {
+                logTestResult(testName, `Passed: Expected ${expected}, got ${actual}`, true);
+            } else {
+                logTestResult(testName, `Failed: Expected ${expected}, got ${actual}`, false);
+            }
+        }
+
+        function assertDeepEquals(actual, expected, testName) {
+            if (JSON.stringify(actual) === JSON.stringify(expected)) {
+                logTestResult(testName, `Passed: Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`, true);
+            } else {
+                logTestResult(testName, `Failed: Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`, false);
+            }
+        }
+        
+        function assertIsTrue(value, testName) {
+            if (value === true) {
+                logTestResult(testName, `Passed: Expected true, got ${value}`, true);
+            } else {
+                logTestResult(testName, `Failed: Expected true, got ${value}`, false);
+            }
+        }
+
+        function assertNotNull(value, testName) {
+            if (value !== null && typeof value !== 'undefined') {
+                logTestResult(testName, `Passed: Expected not null, got ${value}`, true);
+            } else {
+                logTestResult(testName, `Failed: Expected not null, got ${value}`, false);
+            }
+        }
+
+        function resetAppState() {
+            logMessage('Resetting app state...');
+            todos = [];
+            currentFilter = 'all';
+            isPrioritySortActive = false;
+            prioritySortOrder = 'desc';
+            localStorage.removeItem('todos');
+            if (document.getElementById('todoList')) { // Check if element exists before manipulating
+                 document.getElementById('todoList').innerHTML = '';
+            }
+            if (document.getElementById('todoInput')) {
+                document.getElementById('todoInput').value = '';
+            }
+            if (document.getElementById('prioritySelect')) {
+                 document.getElementById('prioritySelect').value = 'medium';
+            }
+            // Reset filter button active states (simplified)
+            document.querySelectorAll('.filter-btn.active').forEach(btn => btn.classList.remove('active'));
+            const defaultFilterBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => btn.textContent.includes('전체'));
+            if (defaultFilterBtn) defaultFilterBtn.classList.add('active');
+            
+            // Reset sort button text (app.js renderTodos should handle this, but good for clean slate)
+            if (sortPriorityBtn) {
+                 sortPriorityBtn.classList.remove('active');
+                 sortPriorityBtn.textContent = '우선순위 정렬';
+            }
+            // Call render to reflect reset
+            if (typeof renderTodos === 'function') renderTodos(); 
+            logMessage('App state reset.');
+        }
+
+        // --- Test Cases ---
+        function testAddTodoWithPriority() {
+            const testName = "Add Todo with Priority";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            todoInput.value = 'Test High Prio';
+            prioritySelect.value = 'high';
+            addTodo();
+            assertEquals(todos.length, 1, `${testName} - Length Check`);
+            assertEquals(todos[0].text, 'Test High Prio', `${testName} - Text Check`);
+            assertEquals(todos[0].priority, 'high', `${testName} - Priority Check`);
+
+            resetAppState();
+            todoInput.value = 'Test Low Prio';
+            prioritySelect.value = 'low';
+            addTodo();
+            assertEquals(todos.length, 1, `${testName} - Low Prio Length`);
+            assertEquals(todos[0].priority, 'low', `${testName} - Low Prio Value`);
+            
+            resetAppState(); // Test default priority if input is added without changing select
+            todoInput.value = 'Test Default Prio';
+            prioritySelect.value = 'medium'; // Ensure it's medium for this specific test
+            addTodo();
+            assertEquals(todos.length, 1, `${testName} - Default Prio Length`);
+            assertEquals(todos[0].priority, 'medium', `${testName} - Default Prio Value`);
+            logMessage(`Finished test: ${testName}`);
+        }
+
+        function testDisplayPriorityAndClass() {
+            const testName = "Display Priority and Class";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            todoInput.value = 'Display Test High';
+            prioritySelect.value = 'high';
+            addTodo(); // This calls renderTodos
+
+            const todoItemEl = todoList.querySelector('li');
+            assertNotNull(todoItemEl, `${testName} - Todo item element exists`);
+            
+            const prioritySpan = todoItemEl.querySelector('.todo-priority');
+            assertNotNull(prioritySpan, `${testName} - Priority span exists`);
+            assertIsTrue(prioritySpan.textContent.includes('Priority: high'), `${testName} - Priority text includes 'high'`);
+            assertIsTrue(prioritySpan.classList.contains('priority-high'), `${testName} - Span has 'priority-high' class`);
+
+            resetAppState();
+            todoInput.value = 'Display Test Medium';
+            prioritySelect.value = 'medium';
+            addTodo();
+            const prioritySpanMedium = todoList.querySelector('li .todo-priority');
+            assertNotNull(prioritySpanMedium, `${testName} - Medium Prio Span`);
+            assertIsTrue(prioritySpanMedium.textContent.includes('Priority: medium'), `${testName} - Text includes 'medium'`);
+            assertIsTrue(prioritySpanMedium.classList.contains('priority-medium'), `${testName} - Span has 'priority-medium' class`);
+            logMessage(`Finished test: ${testName}`);
+        }
+
+        function testSaveAndLoadPriority() {
+            const testName = "Save and Load Priority";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            todoInput.value = 'Save Me High';
+            prioritySelect.value = 'high';
+            addTodo(); // Adds to todos and calls saveTodos()
+
+            // Clear current todos and load from storage
+            todos = []; 
+            loadTodos();
+            
+            assertEquals(todos.length, 1, `${testName} - Loaded 1 todo`);
+            assertEquals(todos[0].text, 'Save Me High', `${testName} - Loaded text check`);
+            assertEquals(todos[0].priority, 'high', `${testName} - Loaded priority check`);
+            logMessage(`Finished test: ${testName}`);
+        }
+
+        function testBackwardCompatibilityLoad() {
+            const testName = "Backward Compatibility Load";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            // Manually save an old todo without priority
+            const oldTodo = [{ id: Date.now(), text: 'Old Todo No Prio', completed: false, createdAt: new Date().toISOString() }];
+            localStorage.setItem('todos', JSON.stringify(oldTodo));
+
+            loadTodos();
+            assertEquals(todos.length, 1, `${testName} - Loaded 1 old todo`);
+            assertEquals(todos[0].text, 'Old Todo No Prio', `${testName} - Old todo text check`);
+            assertEquals(todos[0].priority, 'medium', `${testName} - Old todo gets default 'medium' priority`);
+            logMessage(`Finished test: ${testName}`);
+        }
+
+        function testSortByPriority() {
+            const testName = "Sort by Priority";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            // Add todos in mixed priority order
+            prioritySelect.value = 'medium'; todoInput.value = 'Todo Medium'; addTodo();
+            prioritySelect.value = 'high'; todoInput.value = 'Todo High'; addTodo();
+            prioritySelect.value = 'low'; todoInput.value = 'Todo Low'; addTodo();
+            
+            assertEquals(todos.length, 3, `${testName} - Initial 3 todos added`);
+
+            // Simulate first click on sort button (should sort desc: High, Medium, Low)
+            toggleSortByPriority(); // This calls renderTodos internally
+
+            let listItems = todoList.querySelectorAll('li .todo-text');
+            let prioritiesInDOM = Array.from(todoList.querySelectorAll('li .todo-priority')).map(span => span.textContent);
+            
+            logMessage(`${testName} - DOM order after 1st sort (desc): ${Array.from(listItems).map(li => li.textContent).join(', ')}`);
+            logMessage(`${testName} - Priorities in DOM after 1st sort: ${prioritiesInDOM.join(', ')}`);
+
+            assertEquals(listItems[0].textContent, 'Todo High', `${testName} - Desc Sort: 1st is High`);
+            assertEquals(listItems[1].textContent, 'Todo Medium', `${testName} - Desc Sort: 2nd is Medium`);
+            assertEquals(listItems[2].textContent, 'Todo Low', `${testName} - Desc Sort: 3rd is Low`);
+
+            // Simulate second click on sort button (should sort asc: Low, Medium, High)
+            toggleSortByPriority(); 
+
+            listItems = todoList.querySelectorAll('li .todo-text');
+            prioritiesInDOM = Array.from(todoList.querySelectorAll('li .todo-priority')).map(span => span.textContent);
+            logMessage(`${testName} - DOM order after 2nd sort (asc): ${Array.from(listItems).map(li => li.textContent).join(', ')}`);
+            logMessage(`${testName} - Priorities in DOM after 2nd sort: ${prioritiesInDOM.join(', ')}`);
+
+            assertEquals(listItems[0].textContent, 'Todo Low', `${testName} - Asc Sort: 1st is Low`);
+            assertEquals(listItems[1].textContent, 'Todo Medium', `${testName} - Asc Sort: 2nd is Medium`);
+            assertEquals(listItems[2].textContent, 'Todo High', `${testName} - Asc Sort: 3rd is High`);
+            logMessage(`Finished test: ${testName}`);
+        }
+        
+        function testFilterAndSortInteraction() {
+            const testName = "Filter and Sort Interaction";
+            logMessage(`Starting test: ${testName}`);
+            resetAppState();
+
+            // Add todos with varied properties
+            prioritySelect.value = 'high'; todoInput.value = 'Active High'; addTodo(); // Active
+            prioritySelect.value = 'medium'; todoInput.value = 'Completed Medium'; addTodo(); 
+            todos[1].completed = true; // Manually complete
+            prioritySelect.value = 'low'; todoInput.value = 'Active Low'; addTodo(); // Active
+            prioritySelect.value = 'high'; todoInput.value = 'Completed High'; addTodo();
+            todos[3].completed = true; // Manually complete
+            saveTodos(); renderTodos(); // Save and render initial state
+
+            assertEquals(todos.length, 4, `${testName} - Initial 4 todos added`);
+
+            // Apply 'active' filter
+            filterTodos('active');
+            logMessage(`${testName} - Applied 'active' filter. Visible items: ${todoList.children.length}`);
+            assertEquals(todoList.children.length, 2, `${testName} - Filtered to 2 active todos`);
+
+            // Sort by priority (descending)
+            if (!isPrioritySortActive || prioritySortOrder !== 'desc') {
+                toggleSortByPriority(); // Ensure it's active and desc
+                if (prioritySortOrder === 'asc') toggleSortByPriority(); // Toggle again if it became asc
+            }
+             
+            let listItems = todoList.querySelectorAll('li .todo-text');
+            logMessage(`${testName} - DOM order after 'active' filter and sort desc: ${Array.from(listItems).map(li => li.textContent).join(', ')}`);
+            assertEquals(listItems.length, 2, `${testName} - Still 2 items after sort`);
+            assertEquals(listItems[0].textContent, 'Active High', `${testName} - Filtered+Sorted Desc: 1st is Active High`);
+            assertEquals(listItems[1].textContent, 'Active Low', `${testName} - Filtered+Sorted Desc: 2nd is Active Low`);
+
+            // Toggle sort to ascending
+            toggleSortByPriority();
+            listItems = todoList.querySelectorAll('li .todo-text');
+            logMessage(`${testName} - DOM order after 'active' filter and sort asc: ${Array.from(listItems).map(li => li.textContent).join(', ')}`);
+            assertEquals(listItems[0].textContent, 'Active Low', `${testName} - Filtered+Sorted Asc: 1st is Active Low`);
+            assertEquals(listItems[1].textContent, 'Active High', `${testName} - Filtered+Sorted Asc: 2nd is Active High`);
+            
+            // Change filter to 'completed' (sorting should remain active)
+            filterTodos('completed');
+            logMessage(`${testName} - Applied 'completed' filter. Visible items: ${todoList.children.length}`);
+            assertEquals(todoList.children.length, 2, `${testName} - Filtered to 2 completed todos`);
+            
+            listItems = todoList.querySelectorAll('li .todo-text');
+            logMessage(`${testName} - DOM order after 'completed' filter and sort asc: ${Array.from(listItems).map(li => li.textContent).join(', ')}`);
+            // Current sort is asc: Low, Medium, High. For completed items, we only have Medium and High.
+            // So order should be Medium, High
+            assertEquals(listItems[0].textContent, 'Completed Medium', `${testName} - Filtered(Completed)+Sorted Asc: 1st is Completed Medium`);
+            assertEquals(listItems[1].textContent, 'Completed High', `${testName} - Filtered(Completed)+Sorted Asc: 2nd is Completed High`);
+
+            logMessage(`Finished test: ${testName}`);
+        }
+
+
+        // --- Run all tests ---
+        function runAllTests() {
+            const allTestCases = [
+                testAddTodoWithPriority,
+                testDisplayPriorityAndClass,
+                testSaveAndLoadPriority,
+                testBackwardCompatibilityLoad,
+                testSortByPriority,
+                testFilterAndSortInteraction
+            ];
+
+            allTestCases.forEach(testCase => {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-case';
+                testResultsDiv.appendChild(testDiv); // Placeholder for visual separation
+                try {
+                    testCase();
+                } catch (e) {
+                    logTestResult(testCase.name, `ERROR: ${e.message} \nStack: ${e.stack}`, false);
+                }
+            });
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.innerHTML = `<h3>Test Summary: ${testsPassed} Passed, ${testsFailed} Failed</h3>`;
+            testResultsDiv.insertBefore(summaryDiv, testResultsDiv.firstChild);
+
+            // For automated checking, you might expose a global status
+            // window.testsDone = true; 
+            // window.testsFailedCount = testsFailed;
+        }
+        
+        // Run tests when the DOM is ready (app.js might rely on DOMContentLoaded too)
+        // Or run them after app.js's DOMContentLoaded has fired.
+        // For simplicity, running after a short delay.
+        // In a real scenario, you'd chain this after app.js's setup.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runAllTests);
+        } else {
+            // DOMContentLoaded has already fired
+            runAllTests();
+        }
+
+    </script>
+</body>
+</html>

@@ -8,13 +8,41 @@ let prioritySortOrder = 'desc'; // 'desc' (High->Low) or 'asc' (Low->High)
 const todoInput = document.getElementById('todoInput');
 const todoList = document.getElementById('todoList');
 const prioritySelect = document.getElementById('prioritySelect');
-const filterButtons = document.querySelectorAll('.filter-btn:not(#sortPriorityBtn)'); // Exclude sort button
+const filterButtons = document.querySelectorAll('.filter-btn:not(#sortPriorityBtn):not(#darkModeToggleBtn)'); // Exclude sort and dark mode buttons
 const sortPriorityBtn = document.getElementById('sortPriorityBtn');
+const darkModeToggleBtn = document.getElementById('darkModeToggleBtn'); // Dark mode button
 
-// 페이지 로드 시 저장된 할 일 목록 불러오기
+// --- Dark Mode Functions ---
+function applyTheme(theme) {
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (darkModeToggleBtn) darkModeToggleBtn.textContent = '라이트 모드';
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (darkModeToggleBtn) darkModeToggleBtn.textContent = '다크 모드';
+    }
+}
+
+function toggleDarkMode() {
+    const currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+    localStorage.setItem('theme', currentTheme);
+    applyTheme(currentTheme);
+}
+
+function loadThemePreference() {
+    const savedTheme = localStorage.getItem('theme') || 'light'; // Default to light
+    applyTheme(savedTheme);
+}
+// --- End Dark Mode Functions ---
+
+// 페이지 로드 시 저장된 할 일 목록 및 테마 불러오기
 document.addEventListener('DOMContentLoaded', () => {
     loadTodos();
-    renderTodos();
+    if (darkModeToggleBtn) { // Ensure button exists before adding listener or loading theme
+        loadThemePreference();
+        darkModeToggleBtn.addEventListener('click', toggleDarkMode);
+    }
+    renderTodos(); // Initial render after loading todos and theme
 });
 
 // 할 일 추가 함수

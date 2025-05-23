@@ -205,3 +205,85 @@ h1 {
         margin-right: 5px;
     }
 }
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #1a1a1a; /* Darker background */
+    color: #e0e0e0; /* Lighter text */
+}
+
+.dark-mode .container {
+    background-color: #2c2c2c; /* Dark container background */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Adjusted shadow for dark mode */
+}
+
+.dark-mode h1 {
+    color: #e0e0e0; /* Lighter h1 text */
+}
+
+.dark-mode .todo-input input[type="text"],
+.dark-mode #prioritySelect {
+    background-color: #333333; /* Dark input background */
+    color: #e0e0e0; /* Light input text */
+    border-color: #555555; /* Darker border */
+}
+
+.dark-mode .todo-input button {
+    background-color: #005f73; /* Darker button background */
+    color: #e0e0e0;
+}
+
+.dark-mode .todo-input button:hover {
+    background-color: #007f99;
+}
+
+.dark-mode .filter-btn {
+    background-color: #444444; /* Dark filter button background */
+    color: #e0e0e0; /* Light filter button text */
+}
+
+.dark-mode .filter-btn.active {
+    background-color: #007f99; /* Active filter button in dark mode */
+    color: #ffffff;
+}
+
+.dark-mode .filter-btn:hover {
+    background-color: #555555;
+}
+
+.dark-mode .todo-item {
+    background-color: #333333; /* Dark todo item background */
+    color: #e0e0e0; /* Light todo item text */
+}
+
+.dark-mode .todo-item.completed {
+    background-color: #444444; /* Dark completed todo item */
+    color: #aaaaaa; /* Adjusted completed text color */
+}
+
+.dark-mode .todo-item .delete-btn {
+    background-color: #9b2226; /* Darker delete button */
+    color: #e0e0e0;
+}
+
+.dark-mode .todo-item .delete-btn:hover {
+    background-color: #ae2012;
+}
+
+/* Priority colors in dark mode - assuming text is light, adjust background for contrast */
+.dark-mode .todo-priority.priority-high {
+    background-color: #bb3e03; /* Darker red */
+}
+
+.dark-mode .todo-priority.priority-medium {
+    background-color: #ca6702; /* Darker orange */
+}
+
+.dark-mode .todo-priority.priority-low {
+    background-color: #218838; /* Darker green */
+}
+
+.dark-mode #prioritySelect {
+    background-color: #333333; /* Ensure select has dark background */
+    color: #e0e0e0; /* Ensure select has light text */
+}

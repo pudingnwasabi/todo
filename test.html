@@ -29,6 +29,7 @@
         <button class="filter-btn" onclick="filterTodos('active')">할 일</button>
         <button class="filter-btn" onclick="filterTodos('completed')">완료</button>
         <button id="sortPriorityBtn" class="filter-btn" onclick="toggleSortByPriority()">우선순위 정렬</button>
+        <button id="darkModeToggleBtn" class="filter-btn">다크 모드</button> 
     </div>
 
     <ul id="todoList"></ul>
@@ -305,6 +306,88 @@
             logMessage(`Finished test: ${testName}`);
         }
 
+        function resetDarkModeState() {
+            logMessage('Resetting dark mode state...');
+            document.body.classList.remove('dark-mode');
+            localStorage.removeItem('theme');
+            // Ensure button text is reset if app.js's loadThemePreference isn't called immediately after
+            // darkModeToggleBtn is globally available from app.js after DOMContentLoaded
+            if (typeof darkModeToggleBtn !== 'undefined' && darkModeToggleBtn) { 
+                 darkModeToggleBtn.textContent = '다크 모드';
+            }
+            // We need to ensure app.js's internal state for theme also resets,
+            // so calling loadThemePreference() is good.
+            if (typeof loadThemePreference === 'function') {
+                loadThemePreference(); // This will set it to light by default if no local storage
+            }
+            logMessage('Dark mode state reset.');
+        }
+
+        function testDarkModeFeature() {
+            const testName = "Dark Mode Feature";
+            logMessage(`Starting test: ${testName}`);
+            // const darkModeToggleBtn = document.getElementById('darkModeToggleBtn'); // This is made global by app.js
+            const body = document.body;
+
+            if (typeof darkModeToggleBtn === 'undefined' || !darkModeToggleBtn) {
+                logTestResult(testName, "Failed: darkModeToggleBtn not found. Ensure app.js has loaded and initialized it. Cannot run tests.", false);
+                return;
+            }
+
+            // --- Test 1 & 2: Toggle Functionality and Button Text Update ---
+            logMessage(`${testName} - Testing Toggle and Button Text`);
+            resetDarkModeState(); 
+
+            assertEquals(body.classList.contains('dark-mode'), false, `${testName} - Initial: Body should not have dark-mode class`);
+            // Check initial text after resetDarkModeState ensures loadThemePreference has run
+            assertEquals(darkModeToggleBtn.textContent, '다크 모드', `${testName} - Initial: Button text should be '다크 모드'`);
+
+            darkModeToggleBtn.click(); // Activate dark mode
+            assertIsTrue(body.classList.contains('dark-mode'), `${testName} - Toggle On: Body has dark-mode class`);
+            assertEquals(darkModeToggleBtn.textContent, '라이트 모드', `${testName} - Toggle On: Button text is '라이트 모드'`);
+
+            darkModeToggleBtn.click(); // Deactivate dark mode
+            assertIsTrue(!body.classList.contains('dark-mode'), `${testName} - Toggle Off: Body does not have dark-mode class`);
+            assertEquals(darkModeToggleBtn.textContent, '다크 모드', `${testName} - Toggle Off: Button text is '다크 모드'`);
+
+            // --- Test 3: Local Storage Persistence ---
+            logMessage(`${testName} - Testing Local Storage Persistence`);
+            resetDarkModeState();
+
+            darkModeToggleBtn.click(); // Activate dark mode
+            assertEquals(localStorage.getItem('theme'), 'dark', `${testName} - LocalStorage: 'dark' after activation`);
+
+            darkModeToggleBtn.click(); // Deactivate dark mode
+            assertEquals(localStorage.getItem('theme'), 'light', `${testName} - LocalStorage: 'light' after deactivation`);
+
+            // --- Test 4: Initial Load from Local Storage ---
+            logMessage(`${testName} - Testing Initial Load from Local Storage`);
+
+            // Test 4.1: Load Dark Theme
+            resetDarkModeState(); // Clears theme, body class, and calls loadThemePreference
+            localStorage.setItem('theme', 'dark');
+            loadThemePreference(); // Simulate page load by calling the function from app.js
+            assertIsTrue(body.classList.contains('dark-mode'), `${testName} - Load Dark: Body has dark-mode class`);
+            assertEquals(darkModeToggleBtn.textContent, '라이트 모드', `${testName} - Load Dark: Button text is '라이트 모드'`);
+            
+            // Test 4.2: Load Light Theme
+            resetDarkModeState();
+            localStorage.setItem('theme', 'light');
+            loadThemePreference();
+            assertIsTrue(!body.classList.contains('dark-mode'), `${testName} - Load Light: Body does not have dark-mode class`);
+            assertEquals(darkModeToggleBtn.textContent, '다크 모드', `${testName} - Load Light: Button text is '다크 모드'`);
+
+            // Test 4.3: Load Default Theme (no local storage)
+            resetDarkModeState(); // This already removes 'theme' from localStorage and calls loadThemePreference
+            loadThemePreference(); // Call again to be sure, though resetDarkModeState should handle it
+            assertIsTrue(!body.classList.contains('dark-mode'), `${testName} - Load Default: Body does not have dark-mode class (default light)`);
+            assertEquals(darkModeToggleBtn.textContent, '다크 모드', `${testName} - Load Default: Button text is '다크 모드' (default light)`);
+
+            // Final cleanup
+            resetDarkModeState();
+            logMessage(`Finished test: ${testName}`);
+        }
+
 
         // --- Run all tests ---
         function runAllTests() {
@@ -314,7 +397,8 @@
                 testSaveAndLoadPriority,
                 testBackwardCompatibilityLoad,
                 testSortByPriority,
-                testFilterAndSortInteraction
+                testFilterAndSortInteraction,
+                testDarkModeFeature // Added new test function
             ];
 
             allTestCases.forEach(testCase => {

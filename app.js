@@ -8,6 +8,7 @@ let prioritySortOrder = 'desc'; // 'desc' (High->Low) or 'asc' (Low->High)
 const todoInput = document.getElementById('todoInput');
 const todoList = document.getElementById('todoList');
 const prioritySelect = document.getElementById('prioritySelect');
+const statusSelect = document.getElementById('statusSelect');
 const filterButtons = document.querySelectorAll('.filter-btn:not(#sortPriorityBtn)'); // Exclude sort button
 const sortPriorityBtn = document.getElementById('sortPriorityBtn');
 
@@ -27,9 +28,10 @@ function addTodo() {
     const newTodo = {
         id: Date.now(),
         text,
-        completed: false,
+        // completed: false, // Removed this line
         createdAt: new Date().toISOString(),
-        priority: priority
+        priority: priority,
+        status: statusSelect.value,
     };
 
     todos.push(newTodo);
@@ -41,9 +43,15 @@ function addTodo() {
 
 // 할 일 토글 함수
 function toggleTodo(id) {
-    todos = todos.map(todo => 
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    );
+    todos = todos.map(todo => {
+        if (todo.id === id) {
+            // If status is 'completed', change to 'inprogress'. Otherwise, change to 'completed'.
+            // 'pending' status is only set manually or as default, not via toggle.
+            const newStatus = todo.status === 'completed' ? 'inprogress' : 'completed';
+            return { ...todo, status: newStatus }; // Removed completed property update
+        }
+        return todo;
+    });
     saveTodos();
     renderTodos();
 }
@@ -98,10 +106,10 @@ function renderTodos() {
     
     switch(currentFilter) {
         case 'active':
-            filteredTodos = todos.filter(todo => !todo.completed);
+            filteredTodos = todos.filter(todo => todo.status === 'pending' || todo.status === 'inprogress');
             break;
         case 'completed':
-            filteredTodos = todos.filter(todo => todo.completed);
+            filteredTodos = todos.filter(todo => todo.status === 'completed');
             break;
         default: // 'all'
             filteredTodos = [...todos];
@@ -122,14 +130,15 @@ function renderTodos() {
     }
     
     todoList.innerHTML = filteredTodos.map(todo => `
-        <li class="todo-item ${todo.completed ? 'completed' : ''}">
+        <li class="todo-item ${todo.status === 'completed' ? 'completed' : ''}"> 
             <input 
                 type="checkbox" 
-                ${todo.completed ? 'checked' : ''} 
+                ${todo.status === 'completed' ? 'checked' : ''} 
                 onchange="toggleTodo(${todo.id})"
             >
             <span class="todo-text">${todo.text}</span>
             <span class="todo-priority priority-${todo.priority.toLowerCase()}">Priority: ${todo.priority}</span>
+            <span class="todo-status status-${todo.status.toLowerCase()}">Status: ${todo.status}</span> 
             <button class="delete-btn" onclick="deleteTodo(${todo.id})">삭제</button>
         </li>
     `).join('');
@@ -146,7 +155,7 @@ function renderTodos() {
     }
     
     // 할 일 개수 표시
-    const activeCount = todos.filter(todo => !todo.completed).length;
+    const activeCount = todos.filter(todo => todo.status !== 'completed').length;
     const totalCount = todos.length;
     
     const counter = document.createElement('div');
@@ -171,10 +180,24 @@ function loadTodos() {
     if (savedTodos) {
         const loadedData = JSON.parse(savedTodos);
         todos = loadedData.map(todo => {
-            if (typeof todo.priority === 'undefined') {
-                return { ...todo, priority: 'medium' };
+            let newStatus = 'pending'; // 기본 상태는 '대기중'
+            if (typeof todo.status !== 'undefined') {
+                newStatus = todo.status; // 이미 status가 있으면 그 값을 사용
+            } else if (todo.completed === true) {
+                newStatus = 'completed'; // 기존 completed:true는 '완료'로
             }
-            return todo;
+
+            // 우선순위 기본값 설정 (기존 로직 유지)
+            let priority = todo.priority || 'medium';
+            // No need to check for undefined priority again if it's already handled by `todo.priority || 'medium'`
+
+            const { completed, ...restOfTodo } = todo; // Destructure to remove 'completed'
+
+            return {
+                ...restOfTodo, // id, text, createdAt, etc.
+                status: newStatus,
+                priority: priority
+            };
         });
     }
 }

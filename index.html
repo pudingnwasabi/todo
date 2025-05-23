@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>To-Do List</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 <body>
     <div class="container">
@@ -16,6 +18,7 @@
                 <option value="medium" selected>Medium</option>
                 <option value="low">Low</option>
             </select>
+            <input type="text" id="deadlineInput" placeholder="마감일 선택...">
             <button onclick="addTodo()">추가</button>
         </div>
         <div class="filters">

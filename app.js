@@ -8,6 +8,7 @@ let prioritySortOrder = 'desc'; // 'desc' (High->Low) or 'asc' (Low->High)
 const todoInput = document.getElementById('todoInput');
 const todoList = document.getElementById('todoList');
 const prioritySelect = document.getElementById('prioritySelect');
+const deadlineInput = document.getElementById('deadlineInput');
 const filterButtons = document.querySelectorAll('.filter-btn:not(#sortPriorityBtn)'); // Exclude sort button
 const sortPriorityBtn = document.getElementById('sortPriorityBtn');
 
@@ -15,6 +16,13 @@ const sortPriorityBtn = document.getElementById('sortPriorityBtn');
 document.addEventListener('DOMContentLoaded', () => {
     loadTodos();
     renderTodos();
+
+    // Initialize flatpickr for the deadline input
+    flatpickr("#deadlineInput", {
+        enableTime: false, // Adjust options as needed, for now, only date
+        dateFormat: "Y-m-d",
+        placeholder: "마감일 선택..." // Optional: if you want placeholder via JS
+    });
 });
 
 // 할 일 추가 함수
@@ -23,19 +31,22 @@ function addTodo() {
     if (text === '') return;
 
     const priority = prioritySelect.value;
+    const deadline = deadlineInput.value; // Get deadline value
 
     const newTodo = {
         id: Date.now(),
         text,
         completed: false,
         createdAt: new Date().toISOString(),
-        priority: priority
+        priority: priority,
+        deadline: deadline // Add deadline to todo object
     };
 
     todos.push(newTodo);
     saveTodos();
     renderTodos();
     todoInput.value = '';
+    deadlineInput.value = ''; // Clear deadline input
     todoInput.focus();
 }
 
@@ -129,6 +140,7 @@ function renderTodos() {
                 onchange="toggleTodo(${todo.id})"
             >
             <span class="todo-text">${todo.text}</span>
+            ${todo.deadline ? `<span class="todo-deadline">마감일: ${todo.deadline}</span>` : ''}
             <span class="todo-priority priority-${todo.priority.toLowerCase()}">Priority: ${todo.priority}</span>
             <button class="delete-btn" onclick="deleteTodo(${todo.id})">삭제</button>
         </li>
@@ -171,10 +183,14 @@ function loadTodos() {
     if (savedTodos) {
         const loadedData = JSON.parse(savedTodos);
         todos = loadedData.map(todo => {
-            if (typeof todo.priority === 'undefined') {
-                return { ...todo, priority: 'medium' };
+            const newTodo = { ...todo }; // Create a shallow copy to ensure mutability
+            if (typeof newTodo.priority === 'undefined') {
+                newTodo.priority = 'medium';
             }
-            return todo;
+            if (typeof newTodo.deadline === 'undefined') {
+                newTodo.deadline = null; // Default deadline to null
+            }
+            return newTodo;
         });
     }
 }

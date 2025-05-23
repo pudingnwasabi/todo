@@ -31,20 +31,32 @@ h1 {
     margin-bottom: 20px;
 }
 
-.todo-input input {
+.todo-input input[type="text"] { /* Changed from .todo-input input for specificity */
     flex: 1;
     padding: 10px 15px;
     border: 1px solid #ddd;
     border-radius: 5px 0 0 5px;
     font-size: 16px;
     outline: none;
+    border-right: none; /* Remove right border to visually connect with select */
+}
+
+#prioritySelect {
+    padding: 10px 15px; /* Match input padding */
+    font-size: 16px; /* Match input font size */
+    border: 1px solid #ddd; /* Match input border */
+    border-left: none; /* Remove left border to connect with text input */
+    border-radius: 0; /* No border radius in the middle */
+    outline: none;
+    background-color: white; /* Ensure background consistency */
+    color: #333; /* Ensure text color consistency */
 }
 
 .todo-input button {
     padding: 10px 20px;
     background-color: #3498db;
     color: white;
-    border: none;
+    border: none; /* Button's left border is effectively covered by select's right border if select had one, or appears connected */
     border-radius: 0 5px 5px 0;
     cursor: pointer;
     font-size: 16px;
@@ -133,6 +145,33 @@ h1 {
     opacity: 1;
 }
 
+/* Styles for Priority Display in Todo Item */
+.todo-priority {
+    padding: 4px 8px; /* Slightly adjusted padding */
+    margin-left: auto; /* Pushes it to the right, before the button */
+    margin-right: 10px; 
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white; /* Default text color, overridden by specific priority */
+    text-transform: capitalize; /* To make 'high' look 'High' etc. */
+}
+
+/* Color coding for priorities */
+/* These assume that app.js will add classes like 'priority-high' to the span */
+.todo-priority.priority-high {
+    background-color: #e74c3c; /* Red */
+}
+
+.todo-priority.priority-medium {
+    background-color: #f39c12; /* Orange */
+}
+
+.todo-priority.priority-low {
+    background-color: #2ecc71; /* Green */
+}
+
+
 @media (max-width: 600px) {
     .container {
         margin: 20px;
@@ -143,13 +182,26 @@ h1 {
         flex-direction: column;
     }
     
-    .todo-input input {
-        border-radius: 5px;
+    .todo-input input[type="text"] { /* Adjusted selector */
+        border-radius: 5px; /* Full radius when stacked */
         margin-bottom: 10px;
+        border-right: 1px solid #ddd; /* Restore right border */
+    }
+
+    #prioritySelect {
+        width: 100%;
+        border-radius: 5px; /* Full radius when stacked */
+        margin-bottom: 10px;
+        border-left: 1px solid #ddd; /* Restore left border */
     }
     
     .todo-input button {
         border-radius: 5px;
         width: 100%;
+    }
+
+    .todo-priority {
+        margin-left: 10px; /* Adjust margin for smaller screens if needed */
+        margin-right: 5px;
     }
 }

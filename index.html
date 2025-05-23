@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>할 일 목록</h1>
+        <div class="todo-input">
+            <input type="text" id="todoInput" placeholder="새 할 일을 입력하세요...">
+            <button onclick="addTodo()">추가</button>
+        </div>
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterTodos('all')">전체</button>
+            <button class="filter-btn" onclick="filterTodos('active')">할 일</button>
+            <button class="filter-btn" onclick="filterTodos('completed')">완료</button>
+        </div>
+        <ul id="todoList">
+            <!-- 할 일 항목들이 여기에 추가됩니다 -->
+        </ul>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
